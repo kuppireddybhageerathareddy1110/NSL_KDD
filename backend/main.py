@@ -3,23 +3,24 @@ from pydantic import BaseModel
 import joblib
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
 
-# Load model artifacts
-model = joblib.load("ids_multiclass_model.pkl")
-scaler = joblib.load("scaler.pkl")
-label_encoder = joblib.load("label_encoder.pkl")
+model = joblib.load(BASE_DIR / "ids_multiclass_model.pkl")
+scaler = joblib.load(BASE_DIR / "scaler.pkl")
+label_encoder = joblib.load(BASE_DIR / "label_encoder.pkl")
 
 app = FastAPI(title="Intrusion Detection API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://nsl-kdd.vercel.app"],  # restrict in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Input schema
+
 class NetworkInput(BaseModel):
     duration: float
     protocol_type: int
@@ -63,11 +64,21 @@ class NetworkInput(BaseModel):
     dst_host_rerror_rate: float
     dst_host_srv_rerror_rate: float
 
+@app.get("/")
+def health():
+    return {"status": "IDS API running"}
+
 @app.post("/predict")
 def predict(data: NetworkInput):
     df = pd.DataFrame([data.dict()])
     scaled = scaler.transform(df)
-    pred = model.predict(scaled)
-    result = label_encoder.inverse_transform(pred)[0]
 
-    return {"prediction": result}
+    pred = model.predict(scaled)[0]
+    proba = model.predict_proba(scaled).max()
+
+    result = label_encoder.inverse_transform([pred])[0]
+
+    return {
+        "prediction": result,
+        "confidence": round(float(proba), 3)
+    }
