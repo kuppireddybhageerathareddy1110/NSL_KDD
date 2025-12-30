@@ -148,7 +148,7 @@ export default function App() {
       dst_host_srv_rerror_rate: 0
     };
 
-    const res = await fetch("http://127.0.0.1:8000/predict", {
+    const res = await fetch("https://nsl-kdd-0hb1.onrender.com/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
