@@ -239,8 +239,3 @@ This project is for **educational and research purposes**.
 
 ---
 
-```
-
-
-Just tell me what you need next.
-```
